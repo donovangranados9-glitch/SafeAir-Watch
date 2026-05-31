@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>SafeAir-Watch</title>
+  <style>
+    :root {
+      --safe: #22c55e;
+      --moderate: #f59e0b;
+      --danger: #ef4444;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #273449;
+      --border: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .phone-shell {
+      width: 100%;
+      max-width: 420px;
+      min-height: 100vh;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* STATUS BAR */
+    .status-bar {
+      background: var(--surface);
+      padding: 8px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .status-bar .watch-dot {
+      width: 8px; height: 8px;
+      background: var(--safe);
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, #0c1a2e 0%, #1e293b 100%);
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .logo svg { width: 24px; height: 24px; }
+    .notif-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      position: relative;
+    }
+    .notif-btn .badge {
+      position: absolute; top: -3px; right: -3px;
+      background: var(--danger);
+      color: #fff;
+      font-size: 9px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .greeting { font-size: 13px; color: var(--muted); }
+
+    /* SCROLL AREA */
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 80px;
+    }
+    .scroll-area::-webkit-scrollbar { display: none; }
+
+    /* SECTIONS */
+    .section { padding: 16px 16px 0; }
+    .section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    /* MAIN AQI CARD */
+    .aqi-card {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .aqi-card::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(239,68,68,.15), transparent 70%);
+    }
+    .aqi-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .aqi-label { font-size: 13px; color: var(--muted); }
+    .aqi-location {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .aqi-number {
+      font-size: 64px;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--danger);
+    }
+    .aqi-status {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--danger);
+      margin-bottom: 4px;
+    }
+    .aqi-desc { font-size: 12px; color: var(--muted); max-width: 200px; }
+
+    .sensors-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .sensor-chip {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 8px 6px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .sensor-chip .val { font-size: 15px; font-weight: 700; }
+    .sensor-chip .lbl { font-size: 9px; color: var(--muted); margin-top: 2px; }
+    .sensor-chip.warn .val { color: var(--moderate); }
+    .sensor-chip.danger .val { color: var(--danger); }
+    .sensor-chip.ok .val { color: var(--safe); }
+
+    /* ALERT BANNER */
+    .alert-banner {
+      margin: 12px 16px 0;
+      background: rgba(239,68,68,.12);
+      border: 1px solid rgba(239,68,68,.35);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .alert-banner .icon { font-size: 22px; flex-shrink: 0; }
+    .alert-banner .msg { font-size: 13px; line-height: 1.4; }
+    .alert-banner .msg strong { color: var(--danger); }
+    .dismiss-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+
+    /* CHART */
+    .chart-card {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .chart-title { font-size: 14px; font-weight: 600; }
+    .chart-tabs { display: flex; gap: 4px; }
+    .chart-tab {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: none;
+    }
+    .chart-tab.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .chart-area {
+      height: 100px;
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .bar-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      transition: height .3s;
+    }
+    .bar-lbl { font-size: 9px; color: var(--muted); }
+
+    /* MEDS */
+    .med-card {
+      background: var(--surface);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .med-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .med-item:last-child { border-bottom: none; }
+    .med-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .med-icon.blue { background: rgba(56,189,248,.15); }
+    .med-icon.purple { background: rgba(129,140,248,.15); }
+    .med-icon.green { background: rgba(34,197,94,.15); }
+    .med-info { flex: 1; }
+    .med-name { font-size: 14px; font-weight: 600; }
+    .med-time { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .med-stock {
+      text-align: right;
+    }
+    .stock-num { font-size: 14px; font-weight: 700; }
+    .stock-num.low { color: var(--danger); }
+    .stock-num.ok { color: var(--safe); }
+    .stock-lbl { font-size: 10px; color: var(--muted); }
+    .stock-bar-wrap {
+      width: 60px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 4px;
+    }
+    .stock-bar {
+      height: 100%;
+      border-radius: 2px;
+    }
+    .add-med-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--surface2);
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    /* MAP */
+    .map-card {
+      background: var(--surface);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .map-area {
+      height: 200px;
+      background: #0d1f35;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Fake map grid */
+    .map-area::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(56,189,248,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,189,248,.06) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+    /* Roads */
+    .map-road-h {
+      position: absolute;
+      background: rgba(255,255,255,.08);
+      height: 4px;
+      left: 0; right: 0;
+    }
+    .map-road-v {
+      position: absolute;
+      background: rgba(255,255,255,.08);
+      width: 4px;
+      top: 0; bottom: 0;
+    }
+    .zone {
+      position: absolute;
+      border-radius: 50%;
+      opacity: .35;
+    }
+    .zone.danger { background: var(--danger); }
+    .zone.moderate { background: var(--moderate); }
+    .zone.safe { background: var(--safe); }
+    .user-pin {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      z-index: 10;
+    }
+    .user-pin .ring {
+      width: 48px; height: 48px;
+      border: 3px solid var(--accent);
+      border-radius: 50%;
+      animation: sonar 2s infinite;
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+    }
+    @keyframes sonar {
+      0%{transform:translate(-50%,-50%) scale(0.5);opacity:1}
+      100%{transform:translate(-50%,-50%) scale(1.8);opacity:0}
+    }
+    .user-pin .dot {
+      width: 14px; height: 14px;
+      background: var(--accent);
+      border-radius: 50%;
+      border: 2px solid #fff;
+      position: relative;
+      z-index: 2;
+    }
+    .pharmacy-pin {
+      position: absolute;
+      width: 24px; height: 24px;
+      background: var(--safe);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      border: 2px solid #fff;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(34,197,94,.5);
+    }
+    .map-legend {
+      padding: 10px 14px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+
+    /* REPORT */
+    .report-card {
+      background: var(--surface);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 16px;
+    }
+    .report-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .report-row:last-child { border-bottom: none; }
+    .report-key { font-size: 13px; color: var(--muted); }
+    .report-val { font-size: 13px; font-weight: 600; }
+    .share-btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 12px;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    /* BOTTOM NAV */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding: 8px 0 env(safe-area-inset-bottom, 8px);
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 4px;
+      cursor: pointer;
+      font-size: 10px;
+      color: var(--muted);
+      border: none;
+      background: none;
+      transition: color .2s;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-item svg { width: 22px; height: 22px; }
+
+    /* WATCH WIDGET */
+    .watch-widget {
+      background: linear-gradient(135deg, #0c1a2e, #1a2744);
+      border-radius: 20px;
+      border: 2px solid var(--border);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .watch-face {
+      width: 80px; height: 80px;
+      border-radius: 22px;
+      background: #0a111e;
+      border: 3px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .watch-face::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 16px;
+      border: 1px solid rgba(56,189,248,.2);
+    }
+    .watch-aqi { font-size: 26px; font-weight: 800; color: var(--danger); }
+    .watch-lbl { font-size: 8px; color: var(--muted); letter-spacing: .05em; }
+    .watch-info { flex: 1; }
+    .watch-connected {
+      font-size: 11px;
+      color: var(--safe);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+    .watch-time { font-size: 22px; font-weight: 700; }
+    .watch-date { font-size: 11px; color: var(--muted); }
+    .watch-batt {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      z-index: 200;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal {
+      background: var(--surface);
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      max-width: 420px;
+      padding: 24px 20px 40px;
+      transform: translateY(100%);
+      transition: transform .3s;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-handle {
+      width: 36px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .form-group { margin-bottom: 14px; }
+    .form-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; display: block; }
+    .form-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .btn-primary {
+      flex: 1;
+      padding: 12px;
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      padding: 12px 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 300;
+      opacity: 0;
+      transition: all .3s;
+      white-space: nowrap;
+      box-shadow: 0 4px 24px rgba(0,0,0,.4);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* TAB VIEWS */
+    .tab-view { display: none; }
+    .tab-view.active { display: block; }
+
+    /* Pharmacy list */
+    .pharmacy-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+    .pharmacy-icon {
+      width: 40px; height: 40px;
+      background: rgba(34,197,94,.15);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .pharmacy-name { font-size: 14px; font-weight: 600; }
+    .pharmacy-meta { font-size: 12px; color: var(--muted); }
+    .pharmacy-dist {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+<div class="phone-shell">
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <span><span class="watch-dot"></span> SafeAir-Watch conectado</span>
+    <span id="clock">--:--</span>
+    <span>🔋 78%</span>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- MODAL: agregar medicamento -->
+  <div class="modal-overlay" id="medModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">➕ Agregar Medicamento</div>
+      <div class="form-group">
+        <label class="form-label">Nombre del medicamento</label>
+        <input class="form-input" id="medName" placeholder="Ej: Salbutamol" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dosis</label>
+        <input class="form-input" id="medDose" placeholder="Ej: 2 puff cada 8 horas" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Horarios (separados por coma)</label>
+        <input class="form-input" id="medTimes" placeholder="08:00, 14:00, 20:00" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Stock actual (unidades)</label>
+        <input class="form-input" id="medStock" type="number" placeholder="Ej: 30" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn-primary" onclick="saveMed()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+          <path d="M12 6v6l4 2"/>
+          <circle cx="12" cy="12" r="2" fill="currentColor"/>
+        </svg>
+        SafeAir-Watch
+      </div>
+      <div class="notif-btn" onclick="showToast('3 alertas activas')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span class="badge">3</span>
+      </div>
+    </div>
+    <div class="greeting">Buenos días, Juan — <span style="color:var(--danger)">⚠ Calidad del aire crítica</span></div>
+  </div>
+
+  <!-- SCROLL AREA -->
+  <div class="scroll-area">
+
+    <!-- TAB: INICIO -->
+    <div class="tab-view active" id="tab-home">
+
+      <!-- Watch Widget -->
+      <div class="section">
+        <div class="watch-widget">
+          <div class="watch-face">
+            <div class="watch-aqi" id="watchAqi">152</div>
+            <div class="watch-lbl">AQI</div>
+          </div>
+          <div class="watch-info">
+            <div class="watch-connected">
+              <span style="width:6px;height:6px;background:var(--safe);border-radius:50%;display:inline-block;"></span>
+              Reloj conectado
+            </div>
+            <div class="watch-time" id="watchTime">--:--</div>
+            <div class="watch-date" id="watchDate">--</div>
+            <div class="watch-batt">🔋 Reloj 65% · 📡 BLE activo</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alert banner -->
+      <div class="alert-banner" id="alertBanner">
+        <div class="icon">⚠️</div>
+        <div class="msg"><strong>Alerta respiratoria:</strong> PM2.5 muy alto en tu zona. Se recomienda evitar actividad al aire libre.</div>
+        <button class="dismiss-btn" onclick="document.getElementById('alertBanner').style.display='none'">✕</button>
+      </div>
+
+      <!-- AQI Card -->
+      <div class="section" style="margin-top:12px;">
+        <div class="section-title">Calidad del Aire — Tiempo Real</div>
+        <div class="aqi-card">
+          <div class="aqi-top">
+            <div>
+              <div class="aqi-label">Índice AQI</div>
+              <div class="aqi-number" id="aqiNum">152</div>
+              <div class="aqi-status" id="aqiStatus">Poco Saludable</div>
+              <div class="aqi-desc">Riesgo para personas con condiciones respiratorias. Use su inhalador preventivo.</div>
+            </div>
+          </div>
+          <div class="aqi-location">
+            📍 San José, Desamparados — sensor muñeca
+          </div>
+          <div class="sensors-grid">
+            <div class="sensor-chip danger">
+              <div class="val">89</div>
+              <div class="lbl">PM2.5 µg</div>
+            </div>
+            <div class="sensor-chip warn">
+              <div class="val">1.4k</div>
+              <div class="lbl">CO₂ ppm</div>
+            </div>
+            <div class="sensor-chip warn">
+              <div class="val">0.08</div>
+              <div class="lbl">Ozono ppm</div>
+            </div>
+            <div class="sensor-chip ok">
+              <div class="val">62%</div>
+              <div class="lbl">Humedad</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="section" style="margin-top:12px;">
+        <div class="section-title">Exposición del Día</div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Historial AQI</div>
+            <div class="chart-tabs">
+              <button class="chart-tab active">Hoy</button>
+              <button class="chart-tab" onclick="switchTab(this,'week')">Semana</button>
+            </div>
+          </div>
+          <div class="chart-area" id="chartArea"></div>
+        </div>
+      </div>
+
+    </div><!-- /tab-home -->
+
+    <!-- TAB: MEDICAMENTOS -->
+    <div class="tab-view" id="tab-meds">
+      <div class="section">
+        <div class="section-title">Mis Medicamentos</div>
+        <div class="med-card" id="medList">
+          <!-- rendered by JS -->
+        </div>
+        <button class="add-med-btn" onclick="openModal()">+ Agregar Medicamento</button>
+      </div>
+
+      <div class="section" style="margin-top:16px;">
+        <div class="section-title">Farmacias Cercanas</div>
+        <div id="pharmacyList"></div>
+      </div>
+    </div>
+
+    <!-- TAB: MAPA -->
+    <div class="tab-view" id="tab-map">
+      <div class="section">
+        <div class="section-title">Mapa de Zonas — GAM Costa Rica</div>
+        <div class="map-card">
+          <div class="map-area">
+            <!-- Roads -->
+            <div class="map-road-h" style="top:30%"></div>
+            <div class="map-road-h" style="top:55%"></div>
+            <div class="map-road-h" style="top:78%"></div>
+            <div class="map-road-v" style="left:25%"></div>
+            <div class="map-road-v" style="left:55%"></div>
+            <div class="map-road-v" style="left:75%"></div>
+            <!-- Zones -->
+            <div class="zone danger" style="width:80px;height:80px;top:20%;left:40%;"></div>
+            <div class="zone danger" style="width:60px;height:60px;top:5%;left:15%;"></div>
+            <div class="zone moderate" style="width:70px;height:70px;top:50%;left:60%;"></div>
+            <div class="zone moderate" style="width:50px;height:50px;top:65%;left:10%;"></div>
+            <div class="zone safe" style="width:90px;height:90px;top:30%;left:65%;"></div>
+            <div class="zone safe" style="width:60px;height:60px;top:55%;left:5%;"></div>
+            <!-- User -->
+            <div class="user-pin" style="top:42%;left:52%;">
+              <div class="ring"></div>
+              <div class="dot"></div>
+            </div>
+            <!-- Pharmacies -->
+            <div class="pharmacy-pin" style="top:38%;left:70%;" onclick="showToast('Farmacia La Rebaja — 380m')">💊</div>
+            <div class="pharmacy-pin" style="top:62%;left:30%;" onclick="showToast('Farmacia Sucre — 920m')">💊</div>
+            <div class="pharmacy-pin" style="top:20%;left:60%;" onclick="showToast('Farmacia Fischel — 1.4km')">💊</div>
+          </div>
+          <div class="map-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--danger)"></div> Peligroso</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--moderate)"></div> Moderado</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--safe)"></div> Seguro</div>
+            <div class="legend-item">📍 Tú &nbsp; 💊 Farmacia</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pharmacies section -->
+      <div class="section" style="margin-top:14px;">
+        <div class="section-title">Farmacias Más Cercanas</div>
+        <div class="pharmacy-item">
+          <div class="pharmacy-icon">💊</div>
+          <div>
+            <div class="pharmacy-name">Farmacia La Rebaja</div>
+            <div class="pharmacy-meta">Abierto · hasta 10pm · ☎ 2222-1111</div>
+          </div>
+          <div class="pharmacy-dist">380m</div>
+        </div>
+        <div class="pharmacy-item">
+          <div class="pharmacy-icon">💊</div>
+          <div>
+            <div class="pharmacy-name">Farmacia Sucre</div>
+            <div class="pharmacy-meta">Abierto · hasta 8pm · ☎ 2233-4455</div>
+          </div>
+          <div class="pharmacy-dist">920m</div>
+        </div>
+        <div class="pharmacy-item">
+          <div class="pharmacy-icon">💊</div>
+          <div>
+            <div class="pharmacy-name">Farmacia Fischel</div>
+            <div class="pharmacy-meta">Abierto · 24hrs · ☎ 2244-6677</div>
+          </div>
+          <div class="pharmacy-dist">1.4km</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: REPORTE -->
+    <div class="tab-view" id="tab-report">
+      <div class="section">
+        <div class="section-title">Reporte de Exposición — Hoy</div>
+        <div class="report-card">
+          <div class="report-row">
+            <span class="report-key">AQI promedio del día</span>
+            <span class="report-val" style="color:var(--moderate)">118 — Moderado</span>
+          </div>
+          <div class="report-row">
+            <span class="report-key">Horas en zona peligrosa</span>
+            <span class="report-val" style="color:var(--danger)">3h 20min</span>
+          </div>
+          <div class="report-row">
+            <span class="report-key">Horas en zona segura</span>
+            <span class="report-val" style="color:var(--safe)">8h 40min</span>
+          </div>
+          <div class="report-row">
+            <span class="report-key">PM2.5 máximo registrado</span>
+            <span class="report-val">89 µg/m³</span>
+          </div>
+          <div class="report-row">
+            <span class="report-key">CO₂ promedio</span>
+            <span class="report-val">1,240 ppm</span>
+          </div>
+          <div class="report-row">
+            <span class="report-key">Alertas generadas</span>
+            <span class="report-val">3 alertas</span>
+          </div>
+          <div class="report-row">
+            <span class="report-key">Medicamentos tomados</span>
+            <span class="report-val" style="color:var(--safe)">✓ 3 / 3 dosis</span>
+          </div>
+          <div class="report-row">
+            <span class="report-key">Zona más visitada</span>
+            <span class="report-val">Desamparados</span>
+          </div>
+          <div class="report-row">
+            <span class="report-key">Temperatura promedio</span>
+            <span class="report-val">24°C</span>
+          </div>
+          <button class="share-btn" onclick="showToast('📤 Reporte enviado al médico')">
+            📤 Compartir con mi médico
+          </button>
+        </div>
+
+        <div class="section-title" style="margin-top:16px;">Historial Semanal</div>
+        <div class="report-card">
+          <div class="chart-area" id="weekChart" style="height:80px;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /scroll-area -->
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="switchView('home',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      Inicio
+    </button>
+    <button class="nav-item" onclick="switchView('meds',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+        <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      Medicamentos
+    </button>
+    <button class="nav-item" onclick="switchView('map',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+        <line x1="9" y1="3" x2="9" y2="18"/>
+        <line x1="15" y1="6" x2="15" y2="21"/>
+      </svg>
+      Mapa
+    </button>
+    <button class="nav-item" onclick="switchView('report',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+      Reporte
+    </button>
+  </div>
+
+</div>
+
+<script>
+// ── Clock ──────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('es-CR', {hour:'2-digit',minute:'2-digit'});
+  const d = now.toLocaleDateString('es-CR', {weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('clock').textContent = t;
+  document.getElementById('watchTime').textContent = t;
+  document.getElementById('watchDate').textContent = d;
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// ── Simulated live AQI fluctuation ────────────────────
+let baseAqi = 152;
+setInterval(() => {
+  baseAqi += Math.round((Math.random() - 0.5) * 6);
+  baseAqi = Math.max(90, Math.min(200, baseAqi));
+  document.getElementById('aqiNum').textContent = baseAqi;
+  document.getElementById('watchAqi').textContent = baseAqi;
+  let status, color;
+  if (baseAqi < 51)        { status='Buena';             color='var(--safe)'; }
+  else if (baseAqi < 101)  { status='Moderada';          color='var(--moderate)'; }
+  else if (baseAqi < 151)  { status='Poco Saludable';    color='var(--moderate)'; }
+  else if (baseAqi < 201)  { status='Poco Saludable';    color='var(--danger)'; }
+  else                     { status='Muy Poco Saludable';color='var(--danger)'; }
+  document.getElementById('aqiStatus').textContent = status;
+  document.getElementById('aqiStatus').style.color = color;
+  document.getElementById('aqiNum').style.color = color;
+  document.getElementById('watchAqi').style.color = color;
+}, 5000);
+
+// ── Chart ──────────────────────────────────────────────
+const todayData = [62,78,95,130,152,148,139,155,160,142,138,125];
+const weekData  = [88,102,95,140,125,160,152];
+const labels    = ['6a','7a','8a','9a','10a','11a','12p','1p','2p','3p','4p','5p'];
+const weekLbls  = ['L','M','X','J','V','S','D'];
+
+function colorFor(v) {
+  if (v < 51)  return 'var(--safe)';
+  if (v < 101) return 'var(--moderate)';
+  return 'var(--danger)';
+}
+
+function renderChart(id, data, lbls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const max = Math.max(...data);
+  el.innerHTML = data.map((v,i) => `
+    <div class="bar-group">
+      <div class="bar" style="height:${Math.round(v/max*100)}%;background:${colorFor(v)};opacity:${i===data.length-1?'1':'.6'}"></div>
+      <div class="bar-lbl">${lbls[i]}</div>
+    </div>`).join('');
+}
+
+renderChart('chartArea', todayData, labels);
+renderChart('weekChart', weekData, weekLbls);
+
+// ── Chart tab switch ───────────────────────────────────
+function switchTab(btn, type) {
+  document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (type === 'week') renderChart('chartArea', weekData, weekLbls);
+  else                 renderChart('chartArea', todayData, labels);
+}
+
+// ── Medications ───────────────────────────────────────
+let meds = [
+  { name:'Salbutamol', dose:'2 puff', times:'08:00, 14:00, 20:00', stock:8, maxStock:30, icon:'💨', color:'blue' },
+  { name:'Fluticasona', dose:'1 puff', times:'08:00, 20:00', stock:22, maxStock:60, icon:'💜', color:'purple' },
+  { name:'Montelukast', dose:'1 tableta', times:'21:00', stock:14, maxStock:30, icon:'💊', color:'green' },
+];
+
+function renderMeds() {
+  const el = document.getElementById('medList');
+  el.innerHTML = meds.map((m,i) => {
+    const pct = m.stock / m.maxStock * 100;
+    const low = m.stock <= 7;
+    return `
+    <div class="med-item">
+      <div class="med-icon ${m.color}">${m.icon}</div>
+      <div class="med-info">
+        <div class="med-name">${m.name}</div>
+        <div class="med-time">⏰ ${m.times} · ${m.dose}</div>
+      </div>
+      <div class="med-stock">
+        <div class="stock-num ${low?'low':'ok'}">${m.stock} uds${low?' ⚠':''}</div>
+        <div class="stock-lbl">stock</div>
+        <div class="stock-bar-wrap">
+          <div class="stock-bar" style="width:${pct}%;background:${low?'var(--danger)':'var(--safe)'}"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Low stock alert
+  const low = meds.filter(m => m.stock <= 7);
+  if (low.length) showToast(`⚠ Stock bajo: ${low.map(m=>m.name).join(', ')}`);
+}
+renderMeds();
+
+function renderPharmacies() {
+  const ph = [
+    {name:'Farmacia La Rebaja', dist:'380m', hours:'hasta 10pm', phone:'2222-1111'},
+    {name:'Farmacia Sucre',     dist:'920m', hours:'hasta 8pm',  phone:'2233-4455'},
+    {name:'Farmacia Fischel',   dist:'1.4km',hours:'24hrs',      phone:'2244-6677'},
+  ];
+  document.getElementById('pharmacyList').innerHTML = ph.map(p => `
+    <div class="pharmacy-item">
+      <div class="pharmacy-icon">💊</div>
+      <div>
+        <div class="pharmacy-name">${p.name}</div>
+        <div class="pharmacy-meta">Abierto · ${p.hours} · ☎ ${p.phone}</div>
+      </div>
+      <div class="pharmacy-dist">${p.dist}</div>
+    </div>`).join('');
+}
+renderPharmacies();
+
+// ── Medication modal ──────────────────────────────────
+function openModal() {
+  document.getElementById('medModal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('medModal').classList.remove('open');
+}
+function saveMed() {
+  const name  = document.getElementById('medName').value.trim();
+  const dose  = document.getElementById('medDose').value.trim();
+  const times = document.getElementById('medTimes').value.trim();
+  const stock = parseInt(document.getElementById('medStock').value) || 0;
+  if (!name) { showToast('Ingrese un nombre'); return; }
+  meds.push({ name, dose, times, stock, maxStock: stock, icon:'💊', color:'blue' });
+  renderMeds();
+  closeModal();
+  showToast(`✓ ${name} agregado`);
+  ['medName','medDose','medTimes','medStock'].forEach(id => document.getElementById(id).value = '');
+}
+document.getElementById('medModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ── Nav tabs ──────────────────────────────────────────
+function switchView(name, btn) {
+  document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Toast ─────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Med reminder simulation ───────────────────────────
+setTimeout(() => showToast('⏰ Recordatorio: Salbutamol — 2 puff (14:00)'), 4000);
+</script>
+</body>
+</html>
